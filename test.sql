@@ -16,7 +16,7 @@ CREATE TABLE `subscribers` (
   `email` varchar(255) NOT NULL
 );
 
-GRANT INSERT ON test.* TO 'int_baz'@'localhost';
+GRANT INSERT, UPDATE, DELETE, SELECT ON test.* TO 'int_baz'@'localhost';
 FLUSH PRIVILEGES;
 
 DELIMITER $$
