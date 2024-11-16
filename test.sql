@@ -22,7 +22,7 @@ FLUSH PRIVILEGES;
 DELIMITER $$
 CREATE TRIGGER `after_subscriber_delete` AFTER DELETE ON `subscribers` FOR EACH ROW BEGIN
 	INSERT INTO audit_subscribers (subscriber_name, action_performed)
-	VALUES (OLD.fname, 'Deletetd a subscriber');
+	VALUES (OLD.fname, 'Deleted a subscriber');
 END
 $$
 DELIMITER ;
