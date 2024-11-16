@@ -1,4 +1,11 @@
 <?php
+    $host = 'localhost';
+    $dbname = 'test';
+    $username = 'int_baz';
+    $password = '1nt3rn3t0w3_b4zy';
+    $port = 3306;
+
+
     try {
         $pdo = new PDO('mysql:host=' . $host . ';dbname=' . $dbname . ';port=' . $port, $username, $password);
         echo 'Połączenie nawiązane! <br />';
