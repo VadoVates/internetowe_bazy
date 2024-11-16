@@ -43,7 +43,7 @@
                     }
                 }
             } catch (PDOException $e) {
-                echo 'Połączenie z bazą danych nie zostało utworzone. <br />';
+                echo "Wystąpił błąd";
                 $errormsg= "[" . date('Y-m-d H:i:s') . "] " . (string)$e . PHP_EOL;
                 error_log($errormsg, 3, 'error_log.log');
             }
