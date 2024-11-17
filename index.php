@@ -48,5 +48,7 @@
                 error_log($errormsg, 3, 'error_log.log');
             }
         ?>
+
+        <p><a href="viewsubscribers.php">Lista subskrybentów</a></p>
     </body>
 </html>
