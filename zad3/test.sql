@@ -50,13 +50,54 @@ $$
 DELIMITER ;
 
 ALTER TABLE `audit_subscribers`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`date_added`);
 
 ALTER TABLE `subscribers`
   ADD PRIMARY KEY (`id`);
+
+ALTER TABLE `subscribers`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 ALTER TABLE `audit_subscribers`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  ADD FOREIGN KEY (`id`) REFERENCES `subscribers` (`id`);
 
-ALTER TABLE `subscribers`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+-- pkt. 1 -> widok wyświetlający nazwę użytkowników oraz datę ich dodania
+CREATE VIEW user_creation_view AS
+SELECT
+  subscriber_name,
+  date_added AS creation_date
+FROM
+  audit_subscribers
+WHERE
+  action_performed = 'Insert a new subscriber';
+
+-- pkt. 2 -> widok wyświetlający nazwę użytkowników oraz datę ich usunięcia
+CREATE VIEW user_deletion_view AS
+SELECT
+  subscriber_name,
+  date_added AS deletion_date
+FROM
+  audit_subscribers
+WHERE
+  action_performed = 'Deleted a subscriber';
+
+-- pkt. 3 -> widok wyświetlający nazwę użytkowników oraz datę ich edycji
+CREATE VIEW user_edit_view AS
+SELECT
+  subscriber_name,
+  date_added AS edit_date
+FROM
+  audit_subscribers
+WHERE
+  action_performed = 'Updated a subscriber';
+
+-- pkt. 4 -> widok wyświetlający nazwę już usuniętych użytkowników oraz daty ich dodania i usunięcia
+CREATE VIEW deleted_users_view AS
+SELECT
+  subscriber_name,
+  date_added AS edit_date
+FROM
+  audit_subscribers
+WHERE
+  action_performed = 'Updated a subscriber';
+

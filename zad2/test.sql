@@ -10,10 +10,11 @@ USE test;
 CREATE USER 'int_baz'@'localhost' IDENTIFIED BY '1nt3rn3t0w3_b4zy';
 
 CREATE TABLE `audit_subscribers` (
-  `id` int(11) NOT NULL,
-  `subscriber_name` varchar(255) NOT NULL,
-  `action_performed` text NOT NULL,
-  `date_added` timestamp NOT NULL DEFAULT current_timestamp()
+  `audit_id` INT NOT NULL,
+  `id` INT NOT NULL,
+  `subscriber_name` VARCHAR(255) NOT NULL,
+  `action_performed` TEXT NOT NULL,
+  `date_added` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE `subscribers` (
@@ -27,36 +28,39 @@ FLUSH PRIVILEGES;
 
 DELIMITER $$
 CREATE TRIGGER `after_subscriber_delete` AFTER DELETE ON `subscribers` FOR EACH ROW BEGIN
-	INSERT INTO audit_subscribers (subscriber_name, action_performed)
-	VALUES (OLD.fname, 'Deleted a subscriber');
+	INSERT INTO audit_subscribers (id, subscriber_name, action_performed)
+	VALUES (OLD.id, OLD.fname, 'Deleted a subscriber');
 END
 $$
 DELIMITER ;
 
 DELIMITER $$
 CREATE TRIGGER `after_subscriber_edit` AFTER UPDATE ON `subscribers` FOR EACH ROW BEGIN
-	INSERT INTO audit_subscribers (subscriber_name, action_performed)
-    VALUES (NEW.fname, 'Updated a subscriber');
+	INSERT INTO audit_subscribers (id, subscriber_name, action_performed)
+    VALUES (OLD.id, NEW.fname, 'Updated a subscriber');
 END
 $$
 DELIMITER ;
 
 DELIMITER $$
 CREATE TRIGGER `before_subscriber_insert` BEFORE INSERT ON `subscribers` FOR EACH ROW BEGIN
-	INSERT INTO audit_subscribers (subscriber_name, action_performed)
-    VALUES (NEW.fname, 'Insert a new subscriber');
+	INSERT INTO audit_subscribers (id, subscriber_name, action_performed)
+    VALUES (NEW.id, NEW.fname, 'Insert a new subscriber');
 END
 $$
 DELIMITER ;
 
 ALTER TABLE `audit_subscribers`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`audit_id`);
 
 ALTER TABLE `subscribers`
   ADD PRIMARY KEY (`id`);
+
+ALTER TABLE `subscribers`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 ALTER TABLE `audit_subscribers`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `audit_id` int(11) NOT NULL AUTO INCREMENT;
 
-ALTER TABLE `subscribers`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `audit_subscribers`
+  ADD FOREIGN KEY (`id`) REFERENCES `subscribers` (`id`);
