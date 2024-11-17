@@ -1,5 +1,12 @@
 <!DOCTYPE html>
 <html>
+
+<!-- Autor: Marek Górski -->
+<!-- nr indeksu: 155647 -->
+<!-- grupa D1 -->
+<!-- rok akademicki 2024/2025 -->
+<!-- semestr V -->
+ 
     <head>
         <title>Internetowe Bazy Danych</title>
         <style>
