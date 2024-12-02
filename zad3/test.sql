@@ -11,6 +11,7 @@ CREATE USER 'int_baz'@'localhost' IDENTIFIED BY '1nt3rn3t0w3_b4zy';
 
 CREATE TABLE `audit_subscribers` (
   `id` int(11) NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
   `subscriber_name` varchar(255) NOT NULL,
   `action_performed` text NOT NULL,
   `date_added` timestamp NOT NULL DEFAULT current_timestamp()
@@ -22,7 +23,7 @@ CREATE TABLE `subscribers` (
   `email` varchar(255) NOT NULL
 );
 
-GRANT INSERT, UPDATE, DELETE, SELECT ON test.* TO 'int_baz'@'localhost';
+GRANT INSERT, UPDATE, DELETE, SELECT, TRIGGER ON test.* TO 'int_baz'@'localhost';
 FLUSH PRIVILEGES;
 
 DELIMITER $$
@@ -50,7 +51,7 @@ $$
 DELIMITER ;
 
 ALTER TABLE `audit_subscribers`
-  ADD PRIMARY KEY (`date_added`);
+  ADD PRIMARY KEY (`id`);
 
 ALTER TABLE `subscribers`
   ADD PRIMARY KEY (`id`);
@@ -59,7 +60,10 @@ ALTER TABLE `subscribers`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 ALTER TABLE `audit_subscribers`
-  ADD FOREIGN KEY (`id`) REFERENCES `subscribers` (`id`);
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+ALTER TABLE audit_subscribers
+ADD FOREIGN KEY (`user_id`) REFERENCES subscribers(`id`);
 
 -- pkt. 1 -> widok wyświetlający nazwę użytkowników oraz datę ich dodania
 CREATE VIEW user_creation_view AS
@@ -100,4 +104,3 @@ FROM
   audit_subscribers
 WHERE
   action_performed = 'Updated a subscriber';
-
