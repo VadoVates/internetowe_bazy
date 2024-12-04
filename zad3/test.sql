@@ -12,7 +12,6 @@ CREATE USER 'int_baz'@'localhost' IDENTIFIED BY '1nt3rn3t0w3_b4zy';
 CREATE TABLE `audit_subscribers` (
   `id` int(11) NOT NULL,
   `user_id` int(11) DEFAULT NULL,
-  `user_id` int (11) DEFAULT NULL,
   `subscriber_name` varchar(255) NOT NULL,
   `action_performed` text NOT NULL,
   `date_added` timestamp NOT NULL DEFAULT current_timestamp()
@@ -24,7 +23,6 @@ CREATE TABLE `subscribers` (
   `email` varchar(255) NOT NULL
 );
 
-GRANT INSERT, UPDATE, DELETE, SELECT, TRIGGER ON test.* TO 'int_baz'@'localhost';
 GRANT INSERT, UPDATE, DELETE, SELECT, TRIGGER ON test.* TO 'int_baz'@'localhost';
 FLUSH PRIVILEGES;
 
@@ -57,7 +55,6 @@ $$
 DELIMITER ;
 
 ALTER TABLE `audit_subscribers`
-  ADD PRIMARY KEY (`id`);
   ADD PRIMARY KEY (`id`);
 
 ALTER TABLE `subscribers`
