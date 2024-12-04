@@ -123,6 +123,8 @@ WHERE
 ORDER BY
   user_id, action_date;
 
+
+-- pkt. 5 -> widok wyświetlający tylko użytkowników istniejących
 CREATE VIEW existing_users_view AS
 SELECT DISTINCT
   user_id,
