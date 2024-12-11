@@ -47,18 +47,16 @@
                         echo '<button type="submit">Zatwierdź</button>';
                         echo '</form>';
                     }
+                    elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['columns'])) {
+                        $selected_table = $_POST['table'];
+                        echo '<h3>Wybrana tabela: ' . htmlspecialchars($selected_table) . '</h3>';
 
-                    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['table'])) {
-                        $selected_table = htmlspecialchars($_POST['table']);
-                        echo '<h3>Wybrana tabela: ' . $selected_table . '</h3>';
-
-                        $sql = 'SHOW COLUMNS FROM ' . $selected_table;
-                        $columns = $pdo->query($sql);
+                        $columns = $pdo->prepare('SHOW COLUMNS FROM ' . $selected_table);
+                        $columns->execute();
                         echo '<form method="POST">';
                         echo '<p>Zaznacz które kolumny chcesz wyświetlić</p>';
                         // przerzucenie do kolejnego POST-a nazwy tabeli
-                        echo '<input type="hidden" name="table" value="' . $selected_table . '">';
-                        
+                        echo '<input type="hidden" name="table" value="' . htmlspecialchars($selected_table) . '">';
                         foreach ($columns as $column) {
                             echo '<label>';
                             echo '<input type="checkbox" name="columns[]" value="' . htmlspecialchars($column[0]) . '">' . htmlspecialchars($column[0]);
@@ -66,6 +64,16 @@
                         }
                         echo '<button type="submit">Zatwierdź</button>';
                         echo '</form>';
+                    }
+                    elseif (isset($_POST['columns'])) {
+                        $selected_table = $_POST['table'];
+                        $selected_columns = $_POST['columns'];
+                        $attributes = '';
+                        foreach($selected_columns as $column) {
+                            $attributes = $attributes . '`' . $column . '`, ';
+                        }
+                        $attributes = rtrim($attributes, ', ');
+                        echo $attributes;
                     }
                 } catch (PDOException $e) {
                     echo '</form>';
