@@ -32,6 +32,7 @@
 
                 try {
                     $pdo = new PDO('mysql:host=' . $host . ';dbname=' . $dbname . ';port=' . $port, $username, $password);
+                    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
                     
                     $sql = 'SELECT * FROM `subscribers`';
                     $stmt = $pdo->query($sql);

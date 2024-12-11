@@ -27,15 +27,50 @@
 
                 try {
                     $pdo = new PDO('mysql:host=' . $host . ';dbname=' . $dbname . ';port=' . $port, $username, $password);
+                    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-                    $sql = '';
-                    $stmt = $pdo->query($sql);
-                    foreach($stmt as $row) {
+                    // GET -> załadowanie strony, zmienna $table nieustawiona
+                    if ($_SERVER['REQUEST_METHOD'] === 'GET' || !isset($_POST ['table'])) {
+                        echo '<form method="POST">';
+                        echo '<p>Wybierz tablicę, z której chciałbyś wyświetlić rekordy:</p>';
 
+                        $sql = 'SHOW TABLES';
+                        $tables = $pdo->query($sql);
+                        echo '<select id="table" name="table" required>';
+                        foreach($tables as $table) {
+                            echo '<option value="' . htmlspecialchars($table[0]) . '">';
+                            echo htmlspecialchars($table[0]);
+                            echo '</option>' ;
+                        }
+                        echo '</select>';
+                        echo '<br />';
+                        echo '<button type="submit">Zatwierdź</button>';
+                        echo '</form>';
+                    }
+
+                    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['table'])) {
+                        $selected_table = htmlspecialchars($_POST['table']);
+                        echo '<h3>Wybrana tabela: ' . $selected_table . '</h3>';
+
+                        $sql = 'SHOW COLUMNS FROM ' . $selected_table;
+                        $columns = $pdo->query($sql);
+                        echo '<form method="POST">';
+                        echo '<p>Zaznacz które kolumny chcesz wyświetlić</p>';
+                        // przerzucenie do kolejnego POST-a nazwy tabeli
+                        echo '<input type="hidden" name="table" value"' . $selected_table . '">';
+                        
+                        foreach ($columns as $column) {
+                            echo '<label>';
+                            echo '<input type="checkbox" name="columns[]" value="' . htmlspecialchars($column[0]) . '">' . htmlspecialchars($column[0]);
+                            echo '</label><br />';
+                        }
+                        echo '<button type="submit">Zatwierdź</button>';
+                        echo '</form>';
                     }
                 } catch (PDOException $e) {
-                    echo "Wystąpił błąd";
-                    $errormsg= "[" . date('Y-m-d H:i:s') . "] " . (string)$e . PHP_EOL;
+                    echo '</form>';
+                    echo 'Wystąpił błąd';
+                    $errormsg= '[' . date('Y-m-d H:i:s') . '] ' . (string)$e . PHP_EOL;
                     error_log($errormsg, 3, 'error_log.log');
                 }
             ?>

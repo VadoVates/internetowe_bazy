@@ -15,6 +15,7 @@
 
     try {
         $pdo = new PDO('mysql:host=' . $host . ';dbname=' . $dbname . ';port=' . $port, $username, $password);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         if (isset($_GET['id']) && is_numeric($_GET['id'])) {
             $id = $_GET['id'];
