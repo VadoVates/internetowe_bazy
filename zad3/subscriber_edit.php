@@ -60,7 +60,7 @@
                         $stmt = $pdo->prepare($sql);
                         $stmt->bindParam(':fname', $fname, PDO::PARAM_STR);
                         $stmt->bindParam(':email', $email, PDO::PARAM_STR);
-                        $stmt->bindParam(':id', $id, PDO::PARAM_STR);
+                        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
 
                         if ($stmt->execute()) {
                             header('Location: viewsubscribers.php');

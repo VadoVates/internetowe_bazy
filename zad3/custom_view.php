@@ -57,7 +57,7 @@
                         echo '<form method="POST">';
                         echo '<p>Zaznacz które kolumny chcesz wyświetlić</p>';
                         // przerzucenie do kolejnego POST-a nazwy tabeli
-                        echo '<input type="hidden" name="table" value"' . $selected_table . '">';
+                        echo '<input type="hidden" name="table" value="' . $selected_table . '">';
                         
                         foreach ($columns as $column) {
                             echo '<label>';
