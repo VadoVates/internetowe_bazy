@@ -57,5 +57,7 @@
         ?>
 
         <p><a href="viewsubscribers.php">Lista subskrybentów</a></p>
+        <p><a href="views.php">Widoki</a></p>
+        <p><a href="custom_view.php">Tworzenie widoku</a></p>
     </body>
 </html>

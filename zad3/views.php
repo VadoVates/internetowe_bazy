@@ -104,5 +104,7 @@
                 }
             ?>
         <p><a href="index.php">Dodaj użytkownika</a></p>
+        <p><a href="viewsubscribers.php">Lista subskrybentów</a></p>
+        <p><a href="custom_view.php">Tworzenie widoku</a></p>
     </body>
 </html>

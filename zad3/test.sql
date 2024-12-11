@@ -32,9 +32,6 @@ CREATE TABLE `subscribers` (
 GRANT INSERT, UPDATE, DELETE, SELECT, TRIGGER ON test.* TO 'int_baz'@'localhost';
 FLUSH PRIVILEGES;
 
-GRANT INSERT, UPDATE, DELETE, SELECT, TRIGGER ON test.* TO 'int_baz'@'localhost';
-FLUSH PRIVILEGES;
-
 -- trigger `after_subscriber_delete` dodający informację o usunięciu użytkownika
 DELIMITER $$
 CREATE TRIGGER `after_subscriber_delete` AFTER DELETE ON `subscribers` FOR EACH ROW BEGIN

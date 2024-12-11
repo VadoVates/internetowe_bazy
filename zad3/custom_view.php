@@ -17,11 +17,7 @@
         </style>
     </head>
     <body>
-        <h1>Wyświetl użytkowników</h1>
-        <h5>Delete - powoduje usunięcie użytkownika oraz uruchomienie wyzwalacza po usunięciu</h5>
-        <h5>Edit - po edycji użytkownika zostanie uruchomiony wyzwalacz</h5>
-        <table style="width:1000px">
-            <tr><th>#</th><th>Name</th><th>Email</th><th>Action</th></tr>
+        <h1>Definiowanie własnego widoku tabeli</h1>
             <?php
                 $host = 'localhost';
                 $dbname = 'test';
@@ -29,22 +25,13 @@
                 $password = '1nt3rn3t0w3_b4zy';
                 $port = 3306;
 
-
                 try {
                     $pdo = new PDO('mysql:host=' . $host . ';dbname=' . $dbname . ';port=' . $port, $username, $password);
-                    
-                    $sql = 'SELECT * FROM `subscribers`';
-                    $stmt = $pdo->query($sql);
 
+                    $sql = '';
+                    $stmt = $pdo->query($sql);
                     foreach($stmt as $row) {
-                        echo '<tr>';
-                        echo '<td>'. htmlspecialchars($row['id']) .'</td>';
-                        echo '<td>'. htmlspecialchars($row['fname']) .'</td>';
-                        echo '<td>'. htmlspecialchars($row['email']) .'</td>';
-                        echo '<td>';
-                        echo '<a href="subscriber_del.php?id=' . urlencode($row['id']) . '">Delete</a> | ';
-                        echo '<a href="subscriber_edit.php?id=' . urlencode($row['id']) . '">Edit</a>';
-                        echo '</tr>';
+
                     }
                 } catch (PDOException $e) {
                     echo "Wystąpił błąd";
@@ -52,8 +39,8 @@
                     error_log($errormsg, 3, 'error_log.log');
                 }
             ?>
-        </table>
         <p><a href="index.php">Dodaj użytkownika</a></p>
+        <p><a href="viewsubscribers.php">Lista subskrybentów</a></p>
         <p><a href="views.php">Widoki</a></p>
         <p><a href="custom_view.php">Tworzenie widoku</a></p>
     </body>
