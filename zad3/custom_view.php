@@ -66,14 +66,39 @@
                         echo '</form>';
                     }
                     elseif (isset($_POST['columns'])) {
-                        $selected_table = $_POST['table'];
+                        $selected_table = '`' . $_POST['table'] . '`';
                         $selected_columns = $_POST['columns'];
                         $attributes = '';
+
+                        echo '<table style="width:1000px">';
+                        echo '<thead>';
+                        echo '<tr>';
                         foreach($selected_columns as $column) {
                             $attributes = $attributes . '`' . $column . '`, ';
+                            echo '<th>';
+                            echo $column;
+                            echo '</th>';
                         }
                         $attributes = rtrim($attributes, ', ');
-                        echo $attributes;
+                        echo '</tr>';
+                        echo '</thead>';
+
+                        $sql = 'SELECT ' . $attributes . ' FROM ' . $selected_table;
+                        $stmt = $pdo->prepare($sql);
+                        $stmt->execute();
+                        $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                        echo '<tbody>';
+                        foreach ($result as $row) {
+                            echo '<tr>';
+                            foreach ($row as $single_data) {
+                                echo '<td>';
+                                echo $single_data;
+                                echo '</td>';
+                            }
+                            echo '</tr>';
+                        }
+                        echo '</tbody>';
+                        echo '</table>';
                     }
                 } catch (PDOException $e) {
                     echo '</form>';
