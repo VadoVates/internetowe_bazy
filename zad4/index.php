@@ -1,12 +1,21 @@
-<!DOCTYPE html>
-<html>
+<?php
 
-<!-- Autor: Marek Górski -->
-<!-- nr indeksu: 155647 -->
-<!-- grupa D1 -->
-<!-- rok akademicki 2024/2025 -->
-<!-- semestr V -->
- 
+$file = 'history.csv';
+$headers = [];
+$data = [];
+
+if (($handle = fopen($file, "r")) !== FALSE) {
+    $headers = fgetcsv($handle, 1000, ",");
+
+    while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        $data[] = $row;
+    }
+    fclose($handle);
+}
+?>
+
+<!DOCTYPE html>
+<html> 
     <head>
         <title>Internetowe Bazy Danych</title>
         <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
@@ -15,18 +24,32 @@
         google.charts.setOnLoadCallback(drawChart);
 
         function drawChart() {
-            var data = google.visualization.arrayToDataTable([
-            ['Year', 'Sales', 'Expenses'],
-            ['2004',  1000,      400],
-            ['2005',  1170,      460],
-            ['2006',  660,       1120],
-            ['2007',  1030,      540]
+            var data = new google.visualization.DataTable();
+            <?php
+                echo "data.addColumn('datetime', '" . $headers[0]. "');\n";
+                echo "data.addColumn('number', '" . $headers[1]. "');\n";
+                echo "data.addColumn('number', '" . $headers[2]. "');\n";
+                echo "data.addColumn('number', '" . $headers[3]. "');\n";
+                echo "data.addColumn('number', '" . $headers[4]. "');\n";
+            ?>
+
+            data.addRows([
+                <?php
+                $dataLength = count($data);
+                foreach ($data as $index => $row) {
+                    echo "[new Date('" . $row[0] . "'), ";
+                    echo (float)$row[1] . ", " . (float)$row[2] . ", " . (float)$row[3] . ", " . (float)$row[4];
+                    echo "],\n";
+                }
+                ?>
             ]);
 
             var options = {
-            title: 'Company Performance',
-            curveType: 'function',
-            legend: { position: 'bottom' }
+            title: 'Historia kursów wymiany',
+            // curveType: 'function',
+            legend: { position: 'bottom' },
+            hAxis: { title: '<?php echo $headers[0]; ?>' },
+            vAxis: { title: 'PLN' }
             };
 
             var chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
@@ -34,31 +57,16 @@
             chart.draw(data, options);
         }
         </script>
-
+        <style>
+            h1 {
+                text-align: center;
+            }
+        </style>
     </head>
     <body>
         <h1>Wykresy kursów walut</h1>
 
         <!--Div that will hold the pie chart-->
-        <div id="curve_chart" style="width: 900px; height: 500px"></div>
-
-        <?php
-            $host = 'localhost';
-            $dbname = 'test';
-            $username = 'int_baz';
-            $password = '1nt3rn3t0w3_b4zy';
-            $port = 3306;
-
-
-            try {
-                $pdo = new PDO('mysql:host=' . $host . ';dbname=' . $dbname . ';port=' . $port, $username, $password);
-                $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-            } catch (PDOException $e) {
-                echo "Wystąpił błąd";
-                $errormsg= "[" . date('Y-m-d H:i:s') . "] " . (string)$e . PHP_EOL;
-                error_log($errormsg, 3, 'error_log.log');
-            }
-        ?>
+        <div id="curve_chart" style="width: 100%; height: 500px"></div>
     </body>
 </html>
