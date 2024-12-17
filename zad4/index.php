@@ -1,16 +1,18 @@
 <?php
 
-$file = 'history.csv';
 $headers = [];
 $data = [];
 
-if (($handle = fopen($file, "r")) !== FALSE) {
-    $headers = fgetcsv($handle, 1000, ",");
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file'])) {
+    $filePath = $_FILES['csv_file']['tmp_name'];
+    if (($handle = fopen($filePath, "r")) !== FALSE) {
+        $headers = fgetcsv($handle, 1000, ",");
 
-    while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
-        $data[] = $row;
+        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+            $data[] = $row;
+        }
+        fclose($handle);
     }
-    fclose($handle);
 }
 ?>
 
@@ -18,6 +20,7 @@ if (($handle = fopen($file, "r")) !== FALSE) {
 <html> 
     <head>
         <title>Internetowe Bazy Danych</title>
+        <?php if (!empty($data)): ?>
         <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
         <script type="text/javascript">
         google.charts.load('current', {'packages':['corechart']});
@@ -45,11 +48,11 @@ if (($handle = fopen($file, "r")) !== FALSE) {
             ]);
 
             var options = {
-            title: 'Historia kursów wymiany',
-            // curveType: 'function',
-            legend: { position: 'bottom' },
-            hAxis: { title: '<?php echo $headers[0]; ?>' },
-            vAxis: { title: 'PLN' }
+                title: 'Historia kursów wymiany',
+                // curveType: 'function',
+                legend: { position: 'bottom' },
+                hAxis: { title: '<?php echo $headers[0]; ?>' },
+                vAxis: { title: 'wartość' }
             };
 
             var chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
@@ -57,6 +60,7 @@ if (($handle = fopen($file, "r")) !== FALSE) {
             chart.draw(data, options);
         }
         </script>
+        <?php endif; ?>
         <style>
             h1 {
                 text-align: center;
@@ -65,8 +69,14 @@ if (($handle = fopen($file, "r")) !== FALSE) {
     </head>
     <body>
         <h1>Wykresy kursów walut</h1>
-
+        <?php if (!empty($data)): ?>
         <!--Div that will hold the pie chart-->
         <div id="curve_chart" style="width: 100%; height: 500px"></div>
+        <?php endif; ?>
+
+        <form method="POST" enctype="multipart/form-data">
+            <input type="file" name="csv_file" accept=".csv" required>
+            <button type="submit">Prześlij plik CSV w celu wygenerowania wykresu</button>
+        </form>
     </body>
 </html>
