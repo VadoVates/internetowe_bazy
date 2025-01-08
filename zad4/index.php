@@ -1,6 +1,4 @@
 <?php
-session_start();
-
 /*
 <!-- Autor: Marek Górski -->
 <!-- nr indeksu: 155647 -->
@@ -8,6 +6,8 @@ session_start();
 <!-- rok akademicki 2024/2025 -->
 <!-- semestr V -->
 */
+
+session_start();
 
 $headers = [];
 $data = [];
@@ -72,53 +72,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['start_date'], $_POST[
 <!DOCTYPE html>
 <html> 
 <head>
-    <title>Internetowe Bazy Danych</title>
+    <title>Wykresy kursów walut</title>
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <?php if (!empty($filteredData)): ?>
     <script type="text/javascript">
     google.charts.load('current', {'packages':['corechart']});
-    google.charts.setOnLoadCallback(drawChart);
+    google.charts.setOnLoadCallback(drawCharts);
 
-    function drawChart() {
-        var data = new google.visualization.DataTable();
+    function drawCharts() {
+        var dataEUR = new google.visualization.DataTable();
+        var dataUSD = new google.visualization.DataTable();
 
         // Dodanie kolumn
-        <?php
-        echo "data.addColumn('datetime', '" . $headers[0] . "');\n"; // Pierwsza kolumna to datetime
-        for ($i = 1; $i < count($headers); $i++) {
-            // Ignorujemy kolumny 'date' i 'time'
-            if ($headers[$i] !== 'date' && $headers[$i] !== 'time') {
-                echo "data.addColumn('number', '" . $headers[$i] . "');\n";
-            }
-        }
-        ?>
+        dataEUR.addColumn('datetime', '<?php echo $headers[0]; ?>');
+        dataEUR.addColumn('number', '<?php echo $headers[1]; ?>');
+        dataEUR.addColumn('number', '<?php echo $headers[2]; ?>');
+
+        dataUSD.addColumn('datetime', '<?php echo $headers[0]; ?>');
+        dataUSD.addColumn('number', '<?php echo $headers[3]; ?>');
+        dataUSD.addColumn('number', '<?php echo $headers[4]; ?>');
 
         // Dodanie wierszy danych
-        data.addRows([
+        dataEUR.addRows([
             <?php
             foreach ($filteredData as $row) {
-                echo "[new Date('" . $row[0] . "'), ";
-                for ($i = 1; $i < count($row); $i++) {
-                    // Ignorujemy kolumny 'date' i 'time'
-                    if ($headers[$i] !== 'date' && $headers[$i] !== 'time') {
-                        echo (float)$row[$i];
-                        if ($i < count($row) - 1) echo ", ";
-                    }
-                }
-                echo "],\n";
+                echo "[new Date('" . $row[0] . "'), " . (float)$row[1] . ", " . (float)$row[2] . "],\n";
             }
             ?>
         ]);
 
-        var options = {
-            title: 'Historia kursów wymiany',
+        dataUSD.addRows([
+            <?php
+            foreach ($filteredData as $row) {
+                echo "[new Date('" . $row[0] . "'), " . (float)$row[3] . ", " . (float)$row[4] . "],\n";
+            }
+            ?>
+        ]);
+
+        // Opcje wykresów
+        var optionsEUR = {
+            title: 'Kursy EUR',
             legend: { position: 'bottom' },
             hAxis: { title: '<?php echo $headers[0]; ?>' },
-            vAxis: { title: 'wartość' }
+            vAxis: { title: 'Wartość' }
         };
 
-        var chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
-        chart.draw(data, options);
+        var optionsUSD = {
+            title: 'Kursy USD',
+            legend: { position: 'bottom' },
+            hAxis: { title: '<?php echo $headers[0]; ?>' },
+            vAxis: { title: 'Wartość' }
+        };
+
+        // Rysowanie wykresów
+        var chartEUR = new google.visualization.LineChart(document.getElementById('chart_eur'));
+        chartEUR.draw(dataEUR, optionsEUR);
+
+        var chartUSD = new google.visualization.LineChart(document.getElementById('chart_usd'));
+        chartUSD.draw(dataUSD, optionsUSD);
     }
     </script>
     <?php endif; ?>
@@ -150,9 +161,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['start_date'], $_POST[
         <button type="submit" name="reset_session">Resetuj sesję</button>
     </form>
 
-    <!-- Div na wykres -->
+    <!-- Div na wykresy -->
     <?php if (!empty($filteredData)): ?>
-        <div id="curve_chart" style="width: 100%; height: 500px"></div>
+        <div id="chart_eur" style="width: 100%; height: 500px"></div>
+        <div id="chart_usd" style="width: 100%; height: 500px"></div>
     <?php endif; ?>
 </body>
 </html>
