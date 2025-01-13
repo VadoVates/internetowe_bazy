@@ -1,163 +1,115 @@
 <?php
+$host = 'localhost';
+$dbname = 'chart';
+$username = 'int_baz';
+$password = '1nt3rn3t0w3_b4zy';
+$port = 3306;
 
-session_start();
+// Stała definiująca maksymalną liczbę wykresów
+define('CHART_LIMIT', 5);
 
-$headers = [];
-$data = [];
-$filteredData = [];
+try {
+    $pdo = new PDO('mysql:host=' . $host . ';dbname=' . $dbname . ';port=' . $port, $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-// Resetowanie sesji
-if (isset($_POST['reset_session'])) {
-    session_unset();
-    session_destroy();
-    header("Location: " . $_SERVER['PHP_SELF']);
-    exit;
+    $stmt = $pdo->query("SHOW COLUMNS FROM history");
+    $columns = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+} catch (PDOException $e) {
+    echo "Wystąpił błąd";
+    $errormsg= "[" . date('Y-m-d H:i:s') . "] " . (string)$e . PHP_EOL;
+    error_log($errormsg, 3, 'error_log.log');
 }
 
-// Krok 1: Przesłanie pliku CSV
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file'])) {
-    $filePath = $_FILES['csv_file']['tmp_name'];
-    if (($handle = fopen($filePath, "r")) !== FALSE) {
-        $headers = fgetcsv($handle, 1000, ",");
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
-            $data[] = $row;
-        }
-        fclose($handle);
+$chartData = [];
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['columns']) && isset($_POST['num_charts'])) {
+    $selectedColumns = $_POST['columns'];
+    $numCharts = (int)$_POST['num_charts'];
 
-        // Zapis danych w sesji
-        $_SESSION['headers'] = $headers;
-        $_SESSION['csv_data'] = $data;
-
-        // Wyznaczenie min i max daty
-        $dates = array_column($data, 0);
-        $_SESSION['min_date'] = min($dates);
-        $_SESSION['max_date'] = max($dates);
-
-        // Przekierowanie po przesłaniu pliku
-        header("Location: " . $_SERVER['PHP_SELF']);
-        exit;
-    }
-}
-
-// Krok 2: Filtrowanie danych na podstawie dat
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['start_date'], $_POST['end_date'])) {
-    $data = $_SESSION['csv_data'] ?? [];
-    $headers = $_SESSION['headers'] ?? [];
-    $startDate = $_POST['start_date'];
-    $endDate = $_POST['end_date'];
-
-    // Walidacja i zamiana dat, jeśli start_date > end_date
-    if ($startDate > $endDate) {
-        $temp = $startDate;
-        $startDate = $endDate;
-        $endDate = $temp;
-    }
-
-    foreach ($data as $row) {
-        $rowDate = date('Y-m-d', strtotime($row[0]));
-        if ($rowDate >= $startDate && $rowDate <= $endDate) {
-            $filteredData[] = $row;
-        }
+    if (!empty($selectedColumns)) {
+        $columnsList = implode(", ", $selectedColumns);
+        $query = "SELECT $columnsList FROM history";
+        $stmt = $pdo->query($query);
+        $chartData = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
 ?>
 
 <!DOCTYPE html>
-<html> 
+<html>
 <head>
-    <title>Wykresy kursów walut</title>
+    <title>Konfiguracja wykresów</title>
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-    <?php if (!empty($filteredData)): ?>
     <script type="text/javascript">
-    google.charts.load('current', {'packages':['corechart']});
-    google.charts.setOnLoadCallback(drawCharts);
+        google.charts.load('current', { packages: ['corechart'] });
 
-    function drawCharts() {
-        var dataEUR = new google.visualization.DataTable();
-        var dataUSD = new google.visualization.DataTable();
+        function drawCharts() {
+            <?php if (!empty($chartData)): ?>
+                const chartData = <?php echo json_encode($chartData); ?>;
+                const selectedColumns = <?php echo json_encode($selectedColumns); ?>;
 
-        // Dodanie kolumn
-        dataEUR.addColumn('datetime', '<?php echo $headers[0]; ?>');
-        dataEUR.addColumn('number', '<?php echo $headers[1]; ?>');
-        dataEUR.addColumn('number', '<?php echo $headers[2]; ?>');
+                for (let i = 0; i < selectedColumns.length; i++) {
+                    const column = selectedColumns[i];
 
-        dataUSD.addColumn('datetime', '<?php echo $headers[0]; ?>');
-        dataUSD.addColumn('number', '<?php echo $headers[3]; ?>');
-        dataUSD.addColumn('number', '<?php echo $headers[4]; ?>');
+                    // 1. Tworzenie tabeli danych
+                    const data = new google.visualization.DataTable();
+                    data.addColumn('string', 'X'); // Oś X
+                    data.addColumn('number', column); // Wybrana kolumna
 
-        // Dodanie wierszy danych
-        dataEUR.addRows([
-            <?php
-            foreach ($filteredData as $row) {
-                echo "[new Date('" . $row[0] . "'), " . (float)$row[1] . ", " . (float)$row[2] . "],\n";
-            }
-            ?>
-        ]);
+                    // 2. Dodawanie wierszy do tabeli
+                    for (let j = 0; j < chartData.length; j++) {
+                        const row = chartData[j];
+                        const xValue = row[column];
+                        const yValue = parseFloat(row[column]) || 0;
+                        data.addRow([xValue, yValue]);
+                    }
 
-        dataUSD.addRows([
-            <?php
-            foreach ($filteredData as $row) {
-                echo "[new Date('" . $row[0] . "'), " . (float)$row[3] . ", " . (float)$row[4] . "],\n";
-            }
-            ?>
-        ]);
+                    // 3. Ustawianie opcji wykresu
+                    const options = {
+                        title: `Wykres ${i + 1} (${column})`,
+                        hAxis: { title: 'X' },
+                        vAxis: { title: column },
+                    };
 
-        // Opcje wykresów
-        var optionsEUR = {
-            title: 'Kursy EUR',
-            legend: { position: 'bottom' },
-            hAxis: { title: '<?php echo $headers[0]; ?>' },
-            vAxis: { title: 'Wartość' }
-        };
+                    // 4. Rysowanie wykresu
+                    const chart = new google.visualization.LineChart(document.getElementById(`chart_${i + 1}`));
+                    chart.draw(data, options);
+                }
+            <?php endif; ?>
+        }
 
-        var optionsUSD = {
-            title: 'Kursy USD',
-            legend: { position: 'bottom' },
-            hAxis: { title: '<?php echo $headers[0]; ?>' },
-            vAxis: { title: 'Wartość' }
-        };
-
-        // Rysowanie wykresów
-        var chartEUR = new google.visualization.LineChart(document.getElementById('chart_eur'));
-        chartEUR.draw(dataEUR, optionsEUR);
-
-        var chartUSD = new google.visualization.LineChart(document.getElementById('chart_usd'));
-        chartUSD.draw(dataUSD, optionsUSD);
-    }
+        google.charts.setOnLoadCallback(drawCharts);
     </script>
-    <?php endif; ?>
 </head>
 <body>
-    <h1>Wykresy kursów walut</h1>
+    <h1>Wybierz dane do wykresów</h1>
+    <form method="POST" action="">
+        <label for="num_charts">Ile wykresów chcesz wygenerować?</label>
+        <select name="num_charts" id="num_charts">
+            <?php for ($i = 1; $i <= CHART_LIMIT; $i++): ?>
+                <option value="<?php echo $i; ?>"><?php echo $i; ?></option>
+            <?php endfor; ?>
+        </select>
+        <br />
 
-    <?php if (!isset($_SESSION['csv_data']) || empty($_SESSION['csv_data'])): ?>
-        <!-- Formularz do przesyłania pliku CSV -->
-        <form method="POST" enctype="multipart/form-data">
-            <input type="file" name="csv_file" accept=".csv" required>
-            <button type="submit">Prześlij plik CSV</button>
-        </form>
-    <?php elseif (!isset($_POST['start_date'], $_POST['end_date'])): ?>
-        <!-- Formularz do wyboru zakresu dat -->
-        <form method="POST">
-            <label for="start_date">Data początkowa:</label>
-            <input type="date" name="start_date" value="<?php echo isset($_SESSION['min_date']) ? date('Y-m-d', strtotime($_SESSION['min_date'])) : ''; ?>" min="<?php echo isset($_SESSION['min_date']) ? date('Y-m-d', strtotime($_SESSION['min_date'])) : ''; ?>" max="<?php echo isset($_SESSION['max_date']) ? date('Y-m-d', strtotime($_SESSION['max_date'])) : ''; ?>" required>
+        <h4>Wybierz dane dla wykresów:</h4>
+        <?php foreach ($columns as $column): ?>
+            <div>
+                <label>
+                    <input type="checkbox" name="columns[]" value="<?php echo $column; ?>">
+                    <?php echo $column; ?>
+                </label>
+            </div>
+        <?php endforeach; ?>
 
-            <label for="end_date">Data końcowa:</label>
-            <input type="date" name="end_date" value="<?php echo isset($_SESSION['max_date']) ? date('Y-m-d', strtotime($_SESSION['max_date'])) : ''; ?>" min="<?php echo isset($_SESSION['min_date']) ? date('Y-m-d', strtotime($_SESSION['min_date'])) : ''; ?>" max="<?php echo isset($_SESSION['max_date']) ? date('Y-m-d', strtotime($_SESSION['max_date'])) : ''; ?>" required>
-
-            <button type="submit">Wygeneruj wykres</button>
-        </form>
-    <?php endif; ?>
-
-    <!-- Przycisk resetowania sesji -->
-    <form method="POST">
-        <button type="submit" name="reset_session">Resetuj sesję</button>
+        <br />
+        <button type="submit">Generuj wykresy</button>
     </form>
 
-    <!-- Div na wykresy -->
-    <?php if (!empty($filteredData)): ?>
-        <div id="chart_eur" style="width: 100%; height: 500px"></div>
-        <div id="chart_usd" style="width: 100%; height: 500px"></div>
-    <?php endif; ?>
+    <div id="charts">
+        <?php for ($i = 1; $i <= CHART_LIMIT; $i++): ?>
+            <div id="chart_<?php echo $i; ?>" style="width: 100%; height: 500px; margin-top: 20px;"></div>
+        <?php endfor; ?>
+    </div>
 </body>
 </html>
