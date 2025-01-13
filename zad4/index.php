@@ -1,11 +1,4 @@
 <?php
-/*
-<!-- Autor: Marek Górski -->
-<!-- nr indeksu: 155647 -->
-<!-- grupa D1 -->
-<!-- rok akademicki 2024/2025 -->
-<!-- semestr V -->
-*/
 
 session_start();
 
