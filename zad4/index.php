@@ -16,21 +16,28 @@ try {
     $columns = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
 } catch (PDOException $e) {
-    echo "Wystąpił błąd";
+    echo "Wystąpił błąd połączenia z bazą danych SQL";
     $errormsg= "[" . date('Y-m-d H:i:s') . "] " . (string)$e . PHP_EOL;
     error_log($errormsg, 3, 'error_log.log');
 }
 
 $chartData = [];
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['columns']) && isset($_POST['num_charts'])) {
-    $selectedColumns = $_POST['columns'];
-    $numCharts = (int)$_POST['num_charts'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['charts'])) {
+    $charts = $_POST['charts'];
+    foreach ($charts as $chartIndex => $selection) {
+        $xColumn = $selection['x'] ?? null;
+        $yColumns = $selection['y'] ?? [];
 
-    if (!empty($selectedColumns)) {
-        $columnsList = implode(", ", $selectedColumns);
-        $query = "SELECT $columnsList FROM history";
-        $stmt = $pdo->query($query);
-        $chartData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        if ($xColumn && !empty($yColumns)) {
+            $columnsList = implode(", ", array_merge([$xColumn], $yColumns));
+            $query = "SELECT $columnsList FROM history";
+            $stmt = $pdo->query($query);
+            $chartData[$chartIndex] = [
+                'x' => $xColumn,
+                'y' => $yColumns,
+                'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)
+            ];
+        }
     }
 }
 ?>
@@ -46,35 +53,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['columns']) && isset($
         function drawCharts() {
             <?php if (!empty($chartData)): ?>
                 const chartData = <?php echo json_encode($chartData); ?>;
-                const selectedColumns = <?php echo json_encode($selectedColumns); ?>;
 
-                for (let i = 0; i < selectedColumns.length; i++) {
-                    const column = selectedColumns[i];
-
-                    // 1. Tworzenie tabeli danych
+                chartData.forEach((chart, index) => {
                     const data = new google.visualization.DataTable();
-                    data.addColumn('string', 'X'); // Oś X
-                    data.addColumn('number', column); // Wybrana kolumna
 
-                    // 2. Dodawanie wierszy do tabeli
-                    for (let j = 0; j < chartData.length; j++) {
-                        const row = chartData[j];
-                        const xValue = row[column];
-                        const yValue = parseFloat(row[column]) || 0;
-                        data.addRow([xValue, yValue]);
-                    }
+                    // Dodanie kolumn X i Y
+                    data.addColumn('string', chart.x);
+                    chart.y.forEach(column => {
+                        data.addColumn('number', column);
+                    });
 
-                    // 3. Ustawianie opcji wykresu
+                    // Dodanie wierszy danych
+                    chart.data.forEach(row => {
+                        const rowData = [row[chart.x]];
+                        chart.y.forEach(column => {
+                            rowData.push(parseFloat(row[column]) || 0);
+                        });
+                        data.addRow(rowData);
+                    });
+
+                    // Konfiguracja wykresu
                     const options = {
-                        title: `Wykres ${i + 1} (${column})`,
-                        hAxis: { title: 'X' },
-                        vAxis: { title: column },
+                        title: `Wykres ${index + 1}`,
+                        hAxis: { title: chart.x },
+                        vAxis: { title: 'Wartość' },
                     };
 
-                    // 4. Rysowanie wykresu
-                    const chart = new google.visualization.LineChart(document.getElementById(`chart_${i + 1}`));
-                    chart.draw(data, options);
-                }
+                    const chartElement = new google.visualization.LineChart(document.getElementById(`chart_${index + 1}`));
+                    chartElement.draw(data, options);
+                });
             <?php endif; ?>
         }
 
@@ -85,22 +92,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['columns']) && isset($
     <h1>Wybierz dane do wykresów</h1>
     <form method="POST" action="">
         <label for="num_charts">Ile wykresów chcesz wygenerować?</label>
-        <select name="num_charts" id="num_charts">
+        <select name="num_charts" id="num_charts" onchange="generateChartSelectors()">
             <?php for ($i = 1; $i <= CHART_LIMIT; $i++): ?>
                 <option value="<?php echo $i; ?>"><?php echo $i; ?></option>
             <?php endfor; ?>
         </select>
-        <br />
+        <br /><br />
 
-        <h4>Wybierz dane dla wykresów:</h4>
-        <?php foreach ($columns as $column): ?>
-            <div>
-                <label>
-                    <input type="checkbox" name="columns[]" value="<?php echo $column; ?>">
-                    <?php echo $column; ?>
-                </label>
-            </div>
-        <?php endforeach; ?>
+        <div id="chart-selectors"></div>
 
         <br />
         <button type="submit">Generuj wykresy</button>
@@ -111,5 +110,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['columns']) && isset($
             <div id="chart_<?php echo $i; ?>" style="width: 100%; height: 500px; margin-top: 20px;"></div>
         <?php endfor; ?>
     </div>
+
+    <script>
+        const columns = <?php echo json_encode($columns); ?>;
+
+        function generateChartSelectors() {
+            const numCharts = document.getElementById('num_charts').value;
+            const chartSelectors = document.getElementById('chart-selectors');
+            chartSelectors.innerHTML = '';
+
+            for (let i = 1; i <= numCharts; i++) {
+                const chartDiv = document.createElement('div');
+                chartDiv.innerHTML = `<h4>Wykres ${i}: Wybierz dane</h4>`;
+
+                const xSelector = document.createElement('div');
+                xSelector.innerHTML = '<label>Oś X: </label>';
+                const xSelect = document.createElement('select');
+                xSelect.name = `charts[${i - 1}][x]`;
+                columns.forEach(column => {
+                    const option = document.createElement('option');
+                    option.value = column;
+                    option.textContent = column;
+                    xSelect.appendChild(option);
+                });
+                xSelector.appendChild(xSelect);
+                chartDiv.appendChild(xSelector);
+
+                const ySelector = document.createElement('div');
+                ySelector.innerHTML = '<label>Oś Y: </label>';
+                columns.forEach(column => {
+                    const label = document.createElement('label');
+                    label.innerHTML = `<input type="checkbox" name="charts[${i - 1}][y][]" value="${column}"> ${column}`;
+                    ySelector.appendChild(label);
+                });
+                chartDiv.appendChild(ySelector);
+
+                chartDiv.appendChild(document.createElement('br'));
+                chartSelectors.appendChild(chartDiv);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', generateChartSelectors);
+    </script>
 </body>
 </html>
