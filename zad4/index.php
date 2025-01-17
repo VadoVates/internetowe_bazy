@@ -1,4 +1,11 @@
 <?php
+/*
+// Autor: Marek Górski
+// nr indeksu: 155647
+// grupa D1
+// rok akademicki 2024/2025
+// semestr V
+*/
 $host = 'localhost';
 $dbname = 'chart';
 $username = 'int_baz';
@@ -15,27 +22,20 @@ try {
     $stmt = $pdo->query("SHOW COLUMNS FROM history");
     $columns = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
-    $xColumn = $columns[0]; // Pierwsza kolumna jako domyślna oś X
-    unset($columns[0]); // Usuń pierwszą kolumnę z listy, by nie była wybierana na Y
+    $xColumn = $columns[0];
+    unset($columns[0]);
 
-    // $rangeStmt = $pdo->query("SELECT MIN($xColumn) AS min_date, MAX($xColumn) AS max_date FROM history");
-    // $rangeResult = $rangeStmt->fetch(PDO::FETCH_ASSOC);
-    //     $minDate = $rangeResult['min_date'];
-    // rozdzielenie zapytania bo 'MAX($xColumn) AS max_date FROM history' ostatni element posortowanej tablicy po date_time
-    // wiec na sam dół spada nazwa kolumny czyli string 'date_time' który był wpychany w pole daty kalendarza
     $minDateStmt = $pdo->query("SELECT MIN($xColumn) AS min_date FROM history");
     $minDateResult = $minDateStmt->fetch(PDO::FETCH_ASSOC);
     $minDate = $minDateResult['min_date'];
 
     $maxDateStmt = $pdo->query("SELECT MAX($xColumn) AS max_date FROM history"); 
-        // WHERE $xColumn < (SELECT MAX($xColumn) FROM history)
-    // "); // pobieranie przed ostaniej zawartosci czyli daty anie stinga 'date_time'
     $maxDateResult = $maxDateStmt->fetch(PDO::FETCH_ASSOC);
 
     $maxDate = $maxDateResult['max_date'];
 
     $dateTimeMin = new DateTime($minDate);
-    $minDateCalendar = $dateTimeMin->format('Y-m-d'); // formatujemy daty dla kalendarza
+    $minDateCalendar = $dateTimeMin->format('Y-m-d');
     $DateTimeMax = new DateTime($maxDate);
     $maxDateCalendar = $DateTimeMax->format('Y-m-d');
 
@@ -48,14 +48,14 @@ try {
 $chartData = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    if (!isset($_POST['charts'])) { // sprawdzamy czy w post poszedł charts
+    if (!isset($_POST['charts'])) {
         $error = "Brak niezbędnych danych charts";
     } else {
         $error = '';
 
         $charts = $_POST['charts'];
-        $postStartDateTime = new DateTime($_POST['start_date']); // formatujemy date z kalendarza na typ date
-        $postStartDateTimeString = $postStartDateTime->format('Y-m-d H:i:s'); // formatujemy date na fomat date dal bazy danych
+        $postStartDateTime = new DateTime($_POST['start_date']);
+        $postStartDateTimeString = $postStartDateTime->format('Y-m-d H:i:s');
         $startDate = $postStartDateTimeString ?? $minDate;
 
         $postEndDateTime = new DateTime($_POST['end_date']);
@@ -68,7 +68,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             list($startDate, $endDate) = [$endDate, $startDate];
         }
 
-        // Dopasowanie dat do najbliższych dostępnych w bazie
         $adjustDateStmt = $pdo->prepare("SELECT MIN($xColumn) AS adjusted_start FROM history WHERE $xColumn >= :start_date");
         $adjustDateStmt->bindParam(':start_date', $startDate);
         $adjustDateStmt->execute();
@@ -120,13 +119,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 chartData.forEach((chart, index) => {
                     const data = new google.visualization.DataTable();
 
-                    // Dodanie kolumn X i Y
                     data.addColumn('string', chart.x);
                     chart.y.forEach(column => {
                         data.addColumn('number', column);
                     });
 
-                    // Dodanie wierszy danych
                     chart.data.forEach(row => {
                         const rowData = [row[chart.x]];
                         chart.y.forEach(column => {
@@ -135,7 +132,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         data.addRow(rowData);
                     });
 
-                    // Konfiguracja wykresu
                     const options = {
                         title: `Wykres ${index + 1}`,
                         hAxis: {
@@ -160,7 +156,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <h1>Wybierz dane do wykresów</h1>
     <form method="POST" action="">
         <div>
-            <!-- zakresy zależne od dateCalendar -->
             <label for="start_date">Początek zakresu (<?php echo $xColumn; ?>):</label> 
             <input type="date" id="start_date" name="start_date" value="<?php echo $minDateCalendar; ?>" min="<?php echo $minDateCalendar; ?>" max="<?php echo $maxDateCalendar; ?>">
         </div>
@@ -183,7 +178,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <br />
         <button type="submit">Generuj wykresy</button>
     </form>
-                <!-- pole na errory -->
     <div>
         <p style="color:red"><?php echo $error; ?></p>
     </div>
@@ -224,5 +218,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         document.addEventListener('DOMContentLoaded', generateChartSelectors);
     </script>
 </body>
-
 </html>
