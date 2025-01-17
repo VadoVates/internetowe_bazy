@@ -27,11 +27,9 @@ try {
     $minDateResult = $minDateStmt->fetch(PDO::FETCH_ASSOC);
     $minDate = $minDateResult['min_date'];
 
-    $maxDateStmt = $pdo->query("
-        SELECT MAX($xColumn) AS max_date 
-        FROM history 
-        WHERE $xColumn < (SELECT MAX($xColumn) FROM history)
-    "); // pobieranie przed ostaniej zawartosci czyli daty anie stinga 'date_time'
+    $maxDateStmt = $pdo->query("SELECT MAX($xColumn) AS max_date FROM history"); 
+        // WHERE $xColumn < (SELECT MAX($xColumn) FROM history)
+    // "); // pobieranie przed ostaniej zawartosci czyli daty anie stinga 'date_time'
     $maxDateResult = $maxDateStmt->fetch(PDO::FETCH_ASSOC);
 
     $maxDate = $maxDateResult['max_date'];
@@ -56,13 +54,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = '';
 
         $charts = $_POST['charts'];
-        $postStatDateTime = new DateTime($_POST['start_date']); // formatujemy date z kalendarza na typ date
-        $postStatDateTimeSting = $postStatDateTime->format('Y-m-d H:i:s'); // formatujemy date na fomat date dal bazy danych
-        $startDate = $postStatDateTimeSting ?? $minDate;
+        $postStartDateTime = new DateTime($_POST['start_date']); // formatujemy date z kalendarza na typ date
+        $postStartDateTimeString = $postStartDateTime->format('Y-m-d H:i:s'); // formatujemy date na fomat date dal bazy danych
+        $startDate = $postStartDateTimeString ?? $minDate;
 
         $postEndDateTime = new DateTime($_POST['end_date']);
-        $postEndDateTimeSting = $postStatDateTime->format('Y-m-d H:i:s');
-        $endDate = $postEndDateTimeSting ?? $maxDate;
+        $postEndDateTimeString = $postEndDateTime->format('Y-m-d H:i:s');
+        $endDate = $postEndDateTimeString ?? $maxDate;
+
+        echo $endDate;
 
         if ($startDate > $endDate) {
             list($startDate, $endDate) = [$endDate, $startDate];
