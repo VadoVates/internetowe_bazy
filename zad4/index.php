@@ -62,8 +62,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $postEndDateTimeString = $postEndDateTime->format('Y-m-d H:i:s');
         $endDate = $postEndDateTimeString ?? $maxDate;
 
-        echo $endDate;
-
         if ($startDate > $endDate) {
             list($startDate, $endDate) = [$endDate, $startDate];
         }
